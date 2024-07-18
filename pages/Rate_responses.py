@@ -182,11 +182,10 @@ with st.form(key = "form_rating", clear_on_submit= True):
 
 
 if st.session_state['count'] < 5:
-    st.write("Bitte bewerte mindestens 5 Prompt-Antwort-Paare, um die Umfrage abzuschliessen.")
+    st.write("Bitte bewerte 5 Prompt-Antwort-Paare, um die Umfrage abzuschliessen.")
     st.write(f"Du hast bis jetzt {st.session_state['count']} Prompt-Antwort-Paare bewertet.") 
 
 else:
-    st.write("Du hast mindestens 5 Frage-Antwort-Paare bewertet und kannst deine Teilnahme jetzt beenden.")
-    if st.button("Teilnahme abschliessen"):
-        st.switch_page("pages/Demographics.py")
+    st.write("Du hast 5 Frage-Antwort-Paare bewertet und kannst deine Teilnahme jetzt beenden.")
+    st.switch_page("pages/Demographics.py")
 
