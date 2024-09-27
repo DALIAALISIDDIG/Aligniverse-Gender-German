@@ -1,16 +1,47 @@
 import streamlit as st
 import streamlit_survey as ss
 import json
+import time
+
 import pandas as pd
 from sqlalchemy import create_engine, text
 import pymysql
 import sqlalchemy
 import os
-import paramiko
 import pymysql
 from sshtunnel import SSHTunnelForwarder
 from fabric import Connection
+from sqlalchemy.exc import SQLAlchemyError
 
+
+st.set_page_config(
+    initial_sidebar_state="collapsed"  # Collapsed sidebar by default
+)
+
+# Initialize session state for sidebar state if not already set
+if 'sidebar_state' not in st.session_state:
+    st.session_state.sidebar_state = 'collapsed'
+
+# Function to collapse the sidebar
+def collapse_sidebar():
+    st.markdown(
+        """
+        <style>
+            [data-testid="collapsedControl"] {
+                display: none;
+            }
+            [data-testid="stSidebar"] {
+                display: none;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Apply the sidebar collapse dynamically based on session state
+if st.session_state.sidebar_state == 'collapsed':
+    collapse_sidebar()
+    
 ssh_host = st.secrets["ssh_host"]
 ssh_port = st.secrets["ssh_port"]
 ssh_user = st.secrets["ssh_user"]
@@ -22,40 +53,70 @@ db_password = st.secrets["db_password"]
 db_name = st.secrets["db_name"]
 db_port = st.secrets["db_port"]
 
-### Set up SSH connection and port forwarding
-conn = Connection(
-    host=ssh_host,
-    port=ssh_port,
-    user=ssh_user,
-    connect_kwargs={"password": ssh_password},
-)
+# Set up SSH tunnel with retry logic
+def start_ssh_tunnel():
+    try:
+        tunnel = SSHTunnelForwarder(
+            (ssh_host, ssh_port),
+            ssh_username=ssh_user,
+            ssh_password=ssh_password,
+            remote_bind_address=(db_host, db_port),
+            set_keepalive=30  # Keeps SSH connection alive
+        )
+        tunnel.start()
+        return tunnel
+    except Exception as e:
+        st.error(f"SSH tunnel connection failed: {e}")
+        raise
 
-# Create SSH Tunnel
-tunnel = SSHTunnelForwarder(
-    (ssh_host, ssh_port),
-    ssh_username=ssh_user,
-    ssh_password=ssh_password,
-    remote_bind_address=(db_host, db_port)
-)
-tunnel.start()
+# Establish a database connection with retries
+def get_connection(tunnel, retries=3, delay=5):
+    for attempt in range(retries):
+        try:
+            conn = pymysql.connect(
+                host='127.0.0.1',
+                user=db_user,
+                password=db_password,
+                database=db_name,
+                port=tunnel.local_bind_port,
+                connect_timeout=10600,  # Increased 
+                read_timeout=9600,     # Increased
+                write_timeout=9600,    # Increased 
+                max_allowed_packet=128 * 1024 * 1024  # 128MB
+            )
+            return conn
+        except pymysql.err.OperationalError as e:
+            st.error(f"Connection attempt {attempt + 1} failed: {e}")
+            if attempt < retries - 1:
+                time.sleep(delay)
+            else:
+                st.error("Failed to connect to the database after multiple retries. Please check your network.")
+                raise
 
-# Function to create a new database connection
-def getconn():
-    conn = pymysql.connect(
-        host='127.0.0.1',
-        user=db_user,
-        password=db_password,
-        database=db_name,
-        port=tunnel.local_bind_port
-    )
-    return conn
+# Create SQLAlchemy engine with retry and connection pooling
+def create_engine_with_pool(tunnel):
+    try:
+        pool = create_engine(
+            "mysql+pymysql://",
+            creator=lambda: get_connection(tunnel),
+            pool_pre_ping=True,
+            pool_recycle=3600,  # Recycles connections every hour
+            pool_size=1000,           # Set pool size to handle multiple connections
+            max_overflow=1000        # Allow 10 extra simultaneous connections if needed        
+        )
+        return pool
+    except Exception as e:
+        st.error(f"Error creating database engine: {e}")
+        st.stop()
+        
 
-# Create a SQLAlchemy engine
-pool = create_engine(
-    "mysql+pymysql://",
-    creator=getconn,
-)
+# Start SSH Tunnel and set up DB pool
+tunnel = start_ssh_tunnel()
+pool = create_engine_with_pool(tunnel)
 
+
+
+# Database operations with error handling
 def update_participant(participant_id, age, gender_identity, country_of_residence, ancestry, ethnicity, political_party, political_spectrum):
     update_query = text("""
     UPDATE df_participants_german
@@ -68,23 +129,36 @@ def update_participant(participant_id, age, gender_identity, country_of_residenc
         political_spectrum = :political_spectrum
     WHERE participant_id = :participant_id
     """)
-    with pool.connect() as connection:
-        connection.execute(update_query, {
-            'participant_id': participant_id,
-            'age': age,
-            'gender_identity': gender_identity,
-            'country_of_residence': country_of_residence,
-            'ancestry': ancestry,
-            'ethnicity': ethnicity,
-            'political_party': political_party,
-            'political_spectrum': political_spectrum
-        })
+    try:
+        with pool.connect() as connection:
+            connection.execute(update_query, {
+                'participant_id': participant_id,
+                'age': age,
+                'gender_identity': gender_identity,
+                'country_of_residence': country_of_residence,
+                'ancestry': ancestry,
+                'ethnicity': ethnicity,
+                'political_party': political_party,
+                'political_spectrum': political_spectrum
+            })
+    except SQLAlchemyError as e:
+        st.error(f"Database update failed: {e}")
+    except Exception as e:
+        st.error("Failed to connect to the database after multiple retries - Update. Please Return the study and check your network!")
 
 ##start survey
 survey = ss.StreamlitSurvey("demographics_survey")
 
 #load data
-df_countries = pd.read_csv("UNSD_Methodology_ancestry.csv", sep = ";")
+# Load data with error handling
+try:
+    df_countries = pd.read_csv(
+        "https://raw.githubusercontent.com/DALIAALISIDDIG/Aligniverse_Gender_English/refs/heads/main/aligniverse_gender-main/UNSD_Methodology_ancestry.csv", 
+        sep=";"
+    )
+except Exception as e:
+    st.error("Failed to connect to the database after multiple retries -Data. Please Return the study and check your network!")
+    st.stop()
 
 age_groups = ["Ich möchte keine Angaben machen","18-30", "31-40", "41-50","51-60", "60<"]
 pronouns = [
