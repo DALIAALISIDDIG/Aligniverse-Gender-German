@@ -191,7 +191,7 @@ def get_sqlalchemy_engine(tunnel):
 def insert_participant_and_get_id(pool):
     try:
         with pool.connect() as connection:
-        insert_query = text("INSERT INTO df_participants_german (age, gender_identity, country_of_residence, ancestry, ethnicity) VALUES (NULL, NULL, NULL, NULL, NULL)")
+            insert_query = text("INSERT INTO df_participants_german (age, gender_identity, country_of_residence, ancestry, ethnicity) VALUES (NULL, NULL, NULL, NULL, NULL)")
             result = connection.execute(insert_query)
             last_id_query = text("SELECT LAST_INSERT_ID()")
             last_id_result = connection.execute(last_id_query)
