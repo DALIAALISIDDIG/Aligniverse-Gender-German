@@ -153,7 +153,7 @@ survey = ss.StreamlitSurvey("demographics_survey")
 # Load data with error handling
 try:
     df_countries = pd.read_csv(
-        "https://raw.githubusercontent.com/DALIAALISIDDIG/Aligniverse_Gender_English/refs/heads/main/aligniverse_gender-main/UNSD_Methodology_ancestry.csv", 
+        "https://raw.githubusercontent.com/DALIAALISIDDIG/Aligniverse-Gender-German/refs/heads/main/UNSD_Methodology_ancestry.csv", 
         sep=";"
     )
 except Exception as e:
@@ -218,12 +218,20 @@ q6_demo = survey.selectbox("Für welche politische Partei würdest du am ehesten
 
 q7_demo = survey.select_slider("Wo siehst du dich selbst auf dem politischen Spektrum?", options=["Liberal", "Eher liberal", "Mitte", "Eher konservativ", "Konservativ"], id="Q7_demo")
 
+
+# Submission handler
 def get_last_id():
-    with pool.connect() as connection:
-        last_id_query = text("SELECT LAST_INSERT_ID()")
-        last_id_result = connection.execute(last_id_query)
-        last_id = last_id_result.scalar()
-        return last_id
+    try:
+        with pool.connect() as connection:
+            last_id_query = text("SELECT LAST_INSERT_ID()")
+            result = connection.execute(last_id_query)
+            return result.scalar()
+    except SQLAlchemyError as e:
+        st.error(f"Failed to fetch participant ID: {e}")
+        return None
+    except Exception as e:
+       st.error("Failed to connect to the database after multiple retries - ID. Please Return the study and check your network!")
+       return None
 
 if 'participant_id' not in st.session_state:
     last_id = get_last_id()
@@ -245,3 +253,5 @@ elif all([q1_demo, q2_demo, q3_demo, q4_demo, q5_demo, q6_demo, q7_demo]):
             q7_demo #political spectrum
         )
         st.switch_page("pages/End_participation.py")
+
+
