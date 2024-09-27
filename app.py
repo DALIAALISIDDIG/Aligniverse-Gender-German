@@ -210,7 +210,8 @@ def insert_prolific_id(pool, participant_id, prolific_id):
         st.error(f"Failed to insert Prolific ID: {e}")
         raise
 
-==
+
+
 # Main logic
 if not all([consent1, consent2, consent3]):
     st.write("Bitte gib deine Zustimmung, indem du alle drei Kästchen ankreuzt.")
