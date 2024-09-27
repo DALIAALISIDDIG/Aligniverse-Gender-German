@@ -1,6 +1,7 @@
 import streamlit as st
 import streamlit_survey as ss
 import streamlit_scrollable_textbox as stx
+import time
 
 import json
 import pandas as pd
@@ -9,13 +10,44 @@ from sqlalchemy import create_engine, text
 import pymysql
 import sqlalchemy
 import os
-import paramiko
 import pymysql
 from sshtunnel import SSHTunnelForwarder
 from fabric import Connection
+from sqlalchemy.exc import SQLAlchemyError
+
 
 ##set config
-st.set_page_config(initial_sidebar_state="collapsed")
+# Set the page config at the top of the file
+st.set_page_config(
+    page_title="Aligniverse",
+    page_icon="🌍",
+    initial_sidebar_state="collapsed"  # Collapsed sidebar by default
+)
+
+
+# Initialize session state for sidebar state if not already set
+if 'sidebar_state' not in st.session_state:
+    st.session_state.sidebar_state = 'collapsed'
+
+# Function to collapse the sidebar
+def collapse_sidebar():
+    st.markdown(
+        """
+        <style>
+            [data-testid="collapsedControl"] {
+                display: none;
+            }
+            [data-testid="stSidebar"] {
+                display: none;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Apply the sidebar collapse dynamically based on session state
+if st.session_state.sidebar_state == 'collapsed':
+    collapse_sidebar()
 
 ##start survey
 survey = ss.StreamlitSurvey("Survey Aligniverse")
@@ -100,75 +132,106 @@ db_name = st.secrets["db_name"]
 db_port = st.secrets["db_port"]
 
 ### Set up SSH connection and port forwarding
-conn = Connection(
-    host=ssh_host,
-    port=ssh_port,
-    user=ssh_user,
-    connect_kwargs={"password": ssh_password},
-)
+### Set up SSH tunnel with keep-alive
+def start_ssh_tunnel():
+    try:
+        tunnel = SSHTunnelForwarder(
+            (ssh_host, ssh_port),
+            ssh_username=ssh_user,
+            ssh_password=ssh_password,
+            remote_bind_address=(db_host, db_port),
+            set_keepalive=30  # Send keep-alive packets every 60 seconds to keep connection alive
+        )
+        tunnel.start()
+        return tunnel
+    except Exception as e:
+        st.error(f"SSH tunnel connection failed: {e}")
+        raise  
 
-# Create SSH Tunnel
-tunnel = SSHTunnelForwarder(
-    (ssh_host, ssh_port),
-    ssh_username=ssh_user,
-    ssh_password=ssh_password,
-    remote_bind_address=(db_host, db_port)
-)
-tunnel.start()
+# Establish Database connection with retry logic and optimized timeouts
+def get_connection(tunnel, retries=3, delay=5):
+    for attempt in range(retries):
+        try:
+            conn = pymysql.connect(
+                host='127.0.0.1',
+                user=db_user,
+                password=db_password,
+                database=db_name,
+                port=tunnel.local_bind_port,
+                connect_timeout=20600,  # Increased 
+                read_timeout=10600,     # Increased
+                write_timeout=10600,    # Increased 
+                max_allowed_packet=128 * 1024 * 1024  # 128MB
+            )
+            return conn
+        except pymysql.err.OperationalError as e:
+            st.error(f"Connection attempt {attempt + 1} failed: {e}")
+            if "MySQL server has gone away" in str(e):
+                # Specific handling for the lost connection error
+                st.error("MySQL server has gone away. Trying to reconnect...")
+            if attempt < retries - 1:
+                time.sleep(delay)
+            else:
+                st.error("Failed to connect to the database after multiple retries.")
+                raise
 
-def getconn():
-    conn = pymysql.connect(
-        host='127.0.0.1',
-        user=db_user,
-        password=db_password,
-        database=db_name,
-        port=tunnel.local_bind_port
+# SQLAlchemy connection pool with pre-ping and recycling for better connection management
+def get_sqlalchemy_engine(tunnel):
+    pool = create_engine(
+        "mysql+pymysql://",
+        creator=lambda: get_connection(tunnel),
+        pool_pre_ping=True,    # Ensure connection is alive before executing a query
+        pool_recycle=600,     # Recycle connections every 1 hour to prevent disconnection 
+        pool_size=1000,           # Set pool size to handle multiple connections
+        max_overflow=1000        # Allow 10 extra simultaneous connections if needed
     )
-    return conn
+    return pool
 
-pool = create_engine(
-    "mysql+pymysql://",
-    creator=getconn,
-)
-
-# Function to insert a participant and get the last inserted ID
-def insert_participant_and_get_id():
-    with pool.connect() as connection:
+# Database insertions
+def insert_participant_and_get_id(pool):
+    try:
+        with pool.connect() as connection:
         insert_query = text("INSERT INTO df_participants_german (age, gender_identity, country_of_residence, ancestry, ethnicity) VALUES (NULL, NULL, NULL, NULL, NULL)")
-        result = connection.execute(insert_query)
-        last_id_query = text("SELECT LAST_INSERT_ID()")
-        last_id_result = connection.execute(last_id_query)
-        last_id = last_id_result.scalar()
-        
-        return last_id
+            result = connection.execute(insert_query)
+            last_id_query = text("SELECT LAST_INSERT_ID()")
+            last_id_result = connection.execute(last_id_query)
+            last_id = last_id_result.scalar()
+            return last_id
+    except SQLAlchemyError as e:
+        st.error(f"Database insertion failed: {e}")
+        raise
 
-def insert_prolific_id(participant_id, prolific_id):
-    insert_query = """
-    INSERT INTO df_prolific_ids_german (
-        participant_id,
-        prolific_id
-    ) VALUES (%s, %s)
-    """
-    with pool.connect() as db_conn:
-        db_conn.execute(insert_query, (
-            participant_id,
-            prolific_id
-        ))
+def insert_prolific_id(pool, participant_id, prolific_id):
+    try:
+        insert_query = """INSERT INTO df_prolific_ids_german (participant_id,prolific_id) VALUES (%s, %s)"""
+        with pool.connect() as db_conn:
+            db_conn.execute(insert_query, (participant_id, prolific_id))
+    except SQLAlchemyError as e:
+        st.error(f"Failed to insert Prolific ID: {e}")
+        raise
 
+==
+# Main logic
 if not all([consent1, consent2, consent3]):
     st.write("Bitte gib deine Zustimmung, indem du alle drei Kästchen ankreuzt.")
 
 elif all([consent1, consent2, consent3]):
     st.write("Bitte gib deine eindeutige Prolific-ID ein, damit wir deine Teilnahme registrieren können.")
     prolific_id = st.text_input("Gib deine eindeutige Prolific-ID ein:", max_chars=50)
-    if st.button("ID einreichen"):
+    
+    if st.button("Submit ID"):
         if prolific_id:
-            last_inserted_id = insert_participant_and_get_id()
-            insert_prolific_id(last_inserted_id, prolific_id)
+            tunnel = start_ssh_tunnel()
+            pool = get_sqlalchemy_engine(tunnel)
+            
+            last_inserted_id = insert_participant_and_get_id(pool)
+            insert_prolific_id(pool, last_inserted_id, prolific_id)
             st.session_state['participant_id'] = last_inserted_id
+            tunnel.stop()  # Stop tunnel when done
         else:
             st.write("Bitte gib deine Prolific ID ein, um fortzufahren.")
 
 if 'participant_id' in st.session_state:
     st.write("Lassen uns einen besseren Datensatz erstellen!")
     st.switch_page("pages/Rate_responses.py")
+
