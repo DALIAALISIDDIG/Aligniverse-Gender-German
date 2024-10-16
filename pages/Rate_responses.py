@@ -167,7 +167,7 @@ def insert_participant_and_get_id():
 def mark_as_rated(prompt_id):
     try:
         with pool.connect() as db_conn:
-            query = text("UPDATE df_prompts_german SET rated = 1 WHERE prompt_id = :prompt_id")
+            query = text("UPDATE df_german_prompts SET rated = 1 WHERE prompt_id = :prompt_id")
             db_conn.execute(query, {'prompt_id': prompt_id})
     except SQLAlchemyError as e:
         st.error(f"Failed to mark prompt as rated: {e}")
@@ -211,7 +211,7 @@ if 'count' not in st.session_state:
 with st.form(key = "form_rating", clear_on_submit= True):
     try:
         with pool.connect() as db_conn:
-            query = text("SELECT * FROM df_prompts_german ORDER BY RAND() LIMIT 1;")
+            query = text("SELECT * FROM df_german_prompts ORDER BY RAND() LIMIT 1;")
             result = db_conn.execute(query)
         
         sample_row = result.fetchone()
