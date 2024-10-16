@@ -218,10 +218,10 @@ with st.form(key = "form_rating", clear_on_submit= True):
         question_id = sample_row[1]
         
         st.subheader("Prompt")
-        st.write("{} [Source]({})".format(sample_row[6],sample_row[2]))
+        st.write("{} [Source]({})".format(sample_row[10],sample_row[2]))
     
         st.subheader("Antwort")
-        st.write(sample_row[7])
+        st.write(sample_row[11])
         
         st.subheader("Bewerte die gezeigte Antwort")
 
