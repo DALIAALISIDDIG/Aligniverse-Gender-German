@@ -142,6 +142,16 @@ def insert_rating(participant_id, question_id, prompt_id, gender_focused, rating
 st.title("Bewerte vorgenerierte Antworten")
 st.write("Unsere Mission ist es, einen 'Alignment'-Datensatz zu erstellen, der deine Meinung miteinbezieht, wie LLMs kontroverse Themen behandeln sollten. Im folgenden Abschnitt siehst du verschiedene Prompts und ihre entsprechenden Antworten. Deine Aufgabe ist es, die Antworten anhand der angezeigten Kriterien zu bewerten. Wir haben die Antworten mithilfe eines Large Language Models (LLM) generiert, das noch nicht ausgerichtet wurde, um dessen Reaktionen auf unsere Fragen zu untersuchen. Hier sind die Details des Modells, das wir verwendet haben: [IGEL: Instruction-tuned German large Language Model for Text](https://huggingface.co/philschmid/instruct-igel-001)")
 
+# Mark a prompt as in progress
+def mark_as_in_progress(prompt_id):
+    try:
+        with pool.connect() as db_conn:
+            query = text("UPDATE df_prompts SET in_progress = 1 WHERE prompt_id = :prompt_id")
+            db_conn.execute(query, {'prompt_id': prompt_id})
+    except SQLAlchemyError as e:
+        st.error(f"Failed to mark prompt as in progress: {e}")
+        raise
+
 
 ##start survey
 survey = ss.StreamlitSurvey("rate_survey")
@@ -211,11 +221,12 @@ if 'count' not in st.session_state:
 with st.form(key = "form_rating", clear_on_submit= True):
     try:
         with pool.connect() as db_conn:
-            query = text("SELECT * FROM df_german_prompts ORDER BY RAND() LIMIT 1;")
+            query = text("SELECT * FROM df_prompts_german_mapped where rated =0 and in_progress =0 ORDER BY RAND() LIMIT 1;")
             result = db_conn.execute(query)
         
-        sample_row = result.fetchone()
-        question_id = sample_row[1]
+        if sample_row:
+            mark_as_in_progress(sample_row[0])  # Mark prompt as in progress
+            question_id = sample_row[1]
         
         st.subheader("Prompt")
         st.write("{} [Source]({})".format(sample_row[10],sample_row[2]))
