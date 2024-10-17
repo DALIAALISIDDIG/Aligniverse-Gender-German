@@ -224,9 +224,9 @@ with st.form(key = "form_rating", clear_on_submit= True):
             query = text("SELECT * FROM df_prompts_german_mapped where rated =0 and in_progress =0 ORDER BY RAND() LIMIT 1;")
             result = db_conn.execute(query)
         
-        if sample_row:
-            mark_as_in_progress(sample_row[0])  # Mark prompt as in progress
-            question_id = sample_row[1]
+        #if sample_row:
+        mark_as_in_progress(sample_row[0])  # Mark prompt as in progress
+        question_id = sample_row[1]
         
         st.subheader("Prompt")
         st.write("{} [Source]({})".format(sample_row[11],sample_row[3]))
