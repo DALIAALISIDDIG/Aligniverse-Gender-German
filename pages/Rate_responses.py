@@ -146,7 +146,7 @@ st.write("Unsere Mission ist es, einen 'Alignment'-Datensatz zu erstellen, der d
 def mark_as_in_progress(prompt_id):
     try:
         with pool.connect() as db_conn:
-            query = text("UPDATE df_prompts SET in_progress = 1 WHERE prompt_id = :prompt_id")
+            query = text("UPDATE df_prompts_german_mapped SET in_progress = 1 WHERE prompt_id = :prompt_id")
             db_conn.execute(query, {'prompt_id': prompt_id})
     except SQLAlchemyError as e:
         st.error(f"Failed to mark prompt as in progress: {e}")
@@ -177,7 +177,7 @@ def insert_participant_and_get_id():
 def mark_as_rated(prompt_id):
     try:
         with pool.connect() as db_conn:
-            query = text("UPDATE df_german_prompts SET rated = 1 WHERE prompt_id = :prompt_id")
+            query = text("UPDATE df_prompts_german_mapped SET rated = 1 WHERE prompt_id = :prompt_id")
             db_conn.execute(query, {'prompt_id': prompt_id})
     except SQLAlchemyError as e:
         st.error(f"Failed to mark prompt as rated: {e}")
@@ -229,10 +229,10 @@ with st.form(key = "form_rating", clear_on_submit= True):
             question_id = sample_row[1]
         
         st.subheader("Prompt")
-        st.write("{} [Source]({})".format(sample_row[10],sample_row[2]))
+        st.write("{} [Source]({})".format(sample_row[11],sample_row[3]))
     
         st.subheader("Antwort")
-        st.write(sample_row[11])
+        st.write(sample_row[12])
         
         st.subheader("Bewerte die gezeigte Antwort")
 
