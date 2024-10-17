@@ -221,7 +221,7 @@ if 'count' not in st.session_state:
 with st.form(key = "form_rating", clear_on_submit= True):
     try:
         with pool.connect() as db_conn:
-            query = text("SELECT * FROM df_prompts_german_mapped where rated =0 and in_progress =0 ORDER BY RAND() LIMIT 1;")
+            query = text("SELECT * FROM df_prompts_german_mapped where  ORDER BY RAND() LIMIT 1;")
             result = db_conn.execute(query)
         
         #if sample_row:
