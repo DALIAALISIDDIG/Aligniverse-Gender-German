@@ -205,6 +205,7 @@ with st.form(key = "form_rating", clear_on_submit= True):
         result = db_conn.execute(query)
     
     sample_row = result.fetchone()
+    st.write(f"Sample Row: {sample_row}")
     question_id = sample_row[1]
     
     st.subheader("Prompt")
