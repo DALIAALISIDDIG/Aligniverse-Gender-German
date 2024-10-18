@@ -162,8 +162,18 @@ def insert_participant_and_get_id():
 
 def mark_as_rated(prompt_id):
     with pool.connect() as db_conn:
-        query = text("UPDATE df_prompts_german SET rated = 1 WHERE prompt_id = :prompt_id")
+        query = text("UPDATE df_prompts_german_mapped SET rated = 1 WHERE prompt_id = :prompt_id")
         db_conn.execute(query, prompt_id=prompt_id)
+
+# Mark a prompt as in progress
+def mark_as_in_progress(prompt_id):
+    try:
+        with pool.connect() as db_conn:
+            query = text("UPDATE df_prompts_german_mapped SET in_progress = 1 WHERE prompt_id = :prompt_id")
+            db_conn.execute(query, {'prompt_id': prompt_id})
+    except SQLAlchemyError as e:
+        st.error(f"Failed to mark prompt as in progress: {e}")
+        raise
 
 def save_to_db():
     if 'participant_id' not in st.session_state:
@@ -201,12 +211,13 @@ if 'count' not in st.session_state:
 
 with st.form(key = "form_rating", clear_on_submit= True):
     with pool.connect() as db_conn:
-        query = text("SELECT * FROM df_prompts_german_mapped WHERE rated = 0 ORDER BY RAND() LIMIT 1")
+        query = text("SELECT * FROM df_prompts_german_mapped WHERE rated = 0 and in_progress=0 ORDER BY RAND() LIMIT 1")
         result = db_conn.execute(query)
     
     sample_row = result.fetchone()
-   # st.write(f"Sample Row: {sample_row}")
-    question_id = sample_row[1]
+    if sample_row:
+        mark_as_in_progress(sample_row[0])  # Mark prompt as in progress
+        question_id = sample_row[1]
     
     st.subheader("Prompt")
     st.write("{} [Source]({})".format(sample_row[6],sample_row[2]))
