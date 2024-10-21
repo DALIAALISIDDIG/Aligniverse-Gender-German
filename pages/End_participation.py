@@ -15,6 +15,6 @@ st.write("Vielen Dank, dass du an unserer Studie teilgenommen hast und uns hilfs
 st.balloons()
 
 st.write("Wenn du auf die folgende Schaltfläche klickst, wirst du zurück zu Prolifics weitergeleitet, damit dein Beitrag gezählt werden kann.")
-st.link_button("Weiterleiten zu Prolifics", "https://app.prolific.com/submissions/complete?cc=C13U5HGT")
+st.link_button("Weiterleiten zu Prolifics", "https://app.prolific.com/submissions/complete?cc=CGNYTYYO")
 
 st.write("Alternativ kannst du direkt den folgenden Completion-Code kopieren: CGNYTYYO")
