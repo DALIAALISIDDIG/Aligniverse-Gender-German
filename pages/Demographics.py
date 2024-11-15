@@ -160,9 +160,9 @@ except Exception as e:
     st.error("Failed to connect to the database after multiple retries -Data. Please Return the study and check your network!")
     st.stop()
 
-age_groups = ["Ich möchte keine Angaben machen","18-30", "31-40", "41-50","51-60", "60<"]
+age_groups = ["18-30", "31-40", "41-50","51-60", "60<","Ich möchte keine Angaben machen"]
 pronouns = [
-    "Ich möchte keine Angaben machen",
+   
     "she/her/hers",
     "he/him/his",
     "they/them/theirs",
@@ -170,21 +170,23 @@ pronouns = [
     "xe/xem/xyrs",
     "ey/em/eirs",
     "ve/ver/vis",
-    "per/pers/perself"
+    "per/pers/perself",
+     "Ich möchte keine Angaben machen"
 ]
 racial_groups = [
-    "Ich möchte keine Angaben machen",
+    
     "Amerikanischer Indianer oder Alaska-Ureinwohner",
     "Asiatisch",
     "Schwarz oder Afroamerikaner",
     "Hispano- oder Latinoamerikaner",
     "Mittlerer Osten oder Nordafrika",
     "Eingeborener Hawaiianer oder Pazifikinsulaner",
-    "Weiss"
+    "Weiss",
+    "Ich möchte keine Angaben machen"
 ]
 
 political_parties = [
-    "Ich möchte keine Angaben machen",
+   
     "SPD",
     "CDU/CSU",
     "Grüne",
@@ -193,7 +195,8 @@ political_parties = [
     "Linke",
     "Piraten",
     "Tier",
-    "Andere"
+    "Andere",
+    "Ich möchte keine Angaben machen"
 ]
 
 list_countries = sorted(df_countries["Country or Area"].to_list())
