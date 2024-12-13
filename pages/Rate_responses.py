@@ -148,7 +148,7 @@ def insert_rating(participant_id,question_id, prompt_id, gender_focused, rating_
         ))
 
 st.title("Bewerte vorgenerierte Antworten")
-st.write("Unsere Mission ist es, einen 'Alignment'-Datensatz zu erstellen, der deine Meinung miteinbezieht, wie LLMs kontroverse Themen behandeln sollten. Im folgenden Abschnitt siehst du verschiedene Prompts und ihre entsprechenden Antworten. Deine Aufgabe ist es, die Antworten anhand der angezeigten Kriterien zu bewerten. Wir haben die Antworten mithilfe eines Large Language Models (LLM) generiert, das noch nicht ausgerichtet wurde, um dessen Reaktionen auf unsere Fragen zu untersuchen. Hier sind die Details des Modells, das wir verwendet haben: [IGEL: Instruction-tuned German large Language Model for Text](https://huggingface.co/philschmid/instruct-igel-001)")
+st.write("Unsere Mission ist es, einen 'Alignment'-Datensatz zu erstellen, der deine Meinung miteinbezieht, wie LLMs kontroverse Themen behandeln sollten. Im folgenden Abschnitt siehst du verschiedene Prompts und ihre entsprechenden Antworten. Deine Aufgabe ist es, die Antworten anhand der angezeigten Kriterien zu bewerten. Wir haben die Antworten mithilfe eines Large Language Models (LLM) generiert, das noch nicht ausgerichtet wurde, um dessen Reaktionen auf unsere Fragen zu untersuchen. Hier sind die Details des Modells, das wir verwendet haben: [Wizard-Vicuna-7B-Uncensored-GPTQ](https://huggingface.co/TheBloke/Wizard-Vicuna-7B-Uncensored-GPTQ)")
 
 ##start survey
 survey = ss.StreamlitSurvey("rate_survey")
