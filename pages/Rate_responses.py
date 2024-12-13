@@ -113,7 +113,7 @@ def get_sqlalchemy_engine(tunnel):
 tunnel = start_ssh_tunnel()
 pool = get_sqlalchemy_engine(tunnel)
 
-def insert_rating(participant_id,question_id, prompt_id, gender_focused, rating_stereotypical_bias, rating_toxicity, rating_emotional_awareness, rating_sensitivity, rating_helpfulness,attention_check,attention_check2,attention_check3):
+def insert_rating(participant_id,question_id, prompt_id, gender_focused, rating_stereotypical_bias, rating_toxicity, rating_emotional_awareness, rating_sensitivity, rating_helpfulness, attention_check , attention_check2 ,attention_check3):
     insert_query = """
     INSERT INTO df_ratings_german (
         participant_id,
@@ -125,7 +125,9 @@ def insert_rating(participant_id,question_id, prompt_id, gender_focused, rating_
         rating_emotional_awareness,
         rating_sensitivity,
         rating_helpfulness,
-        attention_check,attention_check2,attention_check3
+        attention,
+        attention2,
+        attention3
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     with pool.connect() as db_conn:
