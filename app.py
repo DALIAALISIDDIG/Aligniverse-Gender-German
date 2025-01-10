@@ -63,7 +63,7 @@ st.write(text2)
 text3 = "Nimm an unserer Studie teil, um LLM-generierte Texte zu sensiblen Themen zu überprüfen und zu bewerten. Wir werden die gesammelten Bewertungen als Ausrichtungsdatensatz für die Gemeinschaft veröffentlichen."
 st.write(text3)
 
-text4 = "Die Teilnahme dauert in der Regel zwischen 10 und 30 Minuten. Du kannst so viele Texte bewerten, wie du möchtest. Wir schätzen deine Bereitschaft, einen Beitrag zu leisten."
+text4 = "Die Teilnahme dauert in der Regel zwischen 15 Minuten. Du kannst so viele Texte bewerten, wie du möchtest. Wir schätzen deine Bereitschaft, einen Beitrag zu leisten."
 st.write(text4)
 
 st.divider()
