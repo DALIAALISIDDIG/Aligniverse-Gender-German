@@ -219,7 +219,7 @@ q5_demo_str = json.dumps(q5_demo)
 
 q6_demo = survey.selectbox("Für welche politische Partei würdest du am ehesten abstimmen?", options=political_parties, id="Q6_demo", index=None)
 
-q7_demo = survey.select_slider("Wo siehst du dich selbst auf dem politischen Spektrum?", options=["Liberal", "Eher liberal", "Mitte", "Eher konservativ", "Konservativ"], id="Q7_demo")
+q7_demo = survey.select_slider("Wo siehst du dich selbst auf dem politischen Spektrum?", options=["Liberal", "Mitte", "Konservativ"], id="Q7_demo")
 
 
 # Submission handler
